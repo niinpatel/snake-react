@@ -7,30 +7,52 @@ const SNAKE_SPEED = 5; // cannot be more than the FRAME_RATE
 
 export default class Game extends Component {
   state = {
-    snakeBody: [
-      { x: 0 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
-      { x: 1 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
-      { x: 2 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH }
-    ],
-    dir: { x: 1, y: 0 },
-    score: 0
+    gameState: 0,
+    highScore: 0
   };
 
   componentDidMount() {
-    const { canvas, createNewFood, drawGame } = this;
-    this.setState({
-      food: createNewFood()
-    });
+    const { canvas } = this;
     const ctx = canvas.getContext("2d");
-    drawGame(ctx);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "24px Arial";
+
+    ctx.fillStyle = "RGB(220,220,200)";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.strokeStyle = "blue";
+    ctx.strokeRect(200, 200, 150, 50);
+    ctx.strokeText("Click to Start", 275, 225);
   }
+
+  startGame = () => {
+    const { canvas, createNewFood, drawGame } = this;
+    this.setState(
+      {
+        food: createNewFood(),
+        score: 0,
+        gameState: 1,
+        snakeBody: [
+          { x: 0 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
+          { x: 1 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
+          { x: 2 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH }
+        ],
+        dir: { x: 1, y: 0 }
+      },
+      () => {
+        const ctx = canvas.getContext("2d");
+        drawGame(ctx);
+      }
+    );
+  };
 
   drawGame = ctx => {
     let currentFrame = 0;
 
     const game = setInterval(() => {
-      ctx.font = "24px Arial";
+      ctx.fillStyle = "RGB(220,220,200)";
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
       ctx.strokeStyle = "black";
       ctx.strokeText(`Score: ${this.state.score}`, 450, 30);
@@ -46,9 +68,25 @@ export default class Game extends Component {
       this.drawSnake(ctx);
 
       if (this.checkGameOver()) {
-        ctx.font = "72px Arial";
-        ctx.fillText("Game Over", 100, 300);
-        clearInterval(game);
+        const { score, highScore } = this.state;
+        ctx.fillStyle = "RGB(220,220,200)";
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        const newHighScore = score > highScore ? score : highScore;
+        ctx.strokeStyle = "black";
+        ctx.strokeText(
+          `Your Score ${score}, High Score ${newHighScore}`,
+          275,
+          150
+        );
+
+        ctx.strokeStyle = "blue";
+        ctx.strokeRect(200, 200, 150, 50);
+        ctx.strokeText("Click to Start ", 275, 225);
+        this.setState({ gameState: 0, highScore: newHighScore }, () =>
+          clearInterval(game)
+        );
       }
 
       currentFrame++;
@@ -175,6 +213,21 @@ export default class Game extends Component {
     }
   };
 
+  handleClick = e => {
+    e.persist();
+    const { layerX, layerY } = e.nativeEvent;
+    const { gameState } = this.state;
+    if (
+      gameState === 0 &&
+      layerX > 200 &&
+      layerX < 350 &&
+      layerY > 200 &&
+      layerY < 250
+    ) {
+      this.startGame();
+    }
+  };
+
   render() {
     return (
       <canvas
@@ -183,6 +236,7 @@ export default class Game extends Component {
         ref={canvas => (this.canvas = canvas)}
         tabIndex="0"
         onKeyDown={this.handleKeyPress}
+        onClick={this.handleClick}
       />
     );
   }
