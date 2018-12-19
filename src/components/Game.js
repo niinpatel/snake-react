@@ -1,25 +1,28 @@
 import React, { Component } from "react";
 const CANVAS_WIDTH = 600;
-const CANVAS_HEIGHT = 600;
+const CANVAS_HEIGHT = 450;
+const SNAKE_LENGTH = 15; // should be divisible by both canvas height and width
 const FRAME_RATE = 60;
-const SNAKE_HEIGHT = 15;
-const SNAKE_WIDTH = 15;
-const SNAKE_SPEED = 10; // cannot be more than the FRAME_RATE
+const SNAKE_SPEED = 5; // cannot be more than the FRAME_RATE
 
 export default class Game extends Component {
   state = {
-    snakeBody: [{ x: 0, y: 0 }],
+    snakeBody: [
+      { x: 0 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
+      { x: 1 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
+      { x: 2 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH }
+    ],
     dir: { x: 1, y: 0 },
     score: 0
   };
 
   componentDidMount() {
-    const { canvas, createNewFood } = this;
+    const { canvas, createNewFood, drawGame } = this;
     this.setState({
       food: createNewFood()
     });
     const ctx = canvas.getContext("2d");
-    this.drawGame(ctx);
+    drawGame(ctx);
   }
 
   drawGame = ctx => {
@@ -28,14 +31,19 @@ export default class Game extends Component {
     const game = setInterval(() => {
       ctx.font = "24px Arial";
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      ctx.strokeText(`Score: ${this.state.score}`, 500, 30);
+
+      ctx.strokeStyle = "black";
+      ctx.strokeText(`Score: ${this.state.score}`, 450, 30);
 
       if (Math.floor(currentFrame % (FRAME_RATE / SNAKE_SPEED)) === 0) {
         this.moveSnake();
       }
+
+      ctx.fillStyle = "red";
       this.drawFood(ctx);
+
+      ctx.strokeStyle = "green";
       this.drawSnake(ctx);
-      this.eatFood();
 
       if (this.checkGameOver()) {
         ctx.font = "72px Arial";
@@ -50,7 +58,7 @@ export default class Game extends Component {
   drawSnake = ctx => {
     const { snakeBody } = this.state;
     for (let part of snakeBody) {
-      ctx.fillRect(part.x, part.y, SNAKE_WIDTH, SNAKE_HEIGHT);
+      ctx.strokeRect(part.x, part.y, SNAKE_LENGTH, SNAKE_LENGTH);
     }
   };
 
@@ -58,39 +66,40 @@ export default class Game extends Component {
     const x = Math.floor(Math.random() * CANVAS_WIDTH);
     const y = Math.floor(Math.random() * CANVAS_HEIGHT);
     return {
-      x: x - (x % SNAKE_WIDTH),
-      y: y - (y % SNAKE_HEIGHT)
+      x: x - (x % SNAKE_LENGTH),
+      y: y - (y % SNAKE_LENGTH)
     };
   };
 
   drawFood = ctx => {
     const { food } = this.state;
-    ctx.fillRect(food.x, food.y, SNAKE_WIDTH, SNAKE_HEIGHT);
+    ctx.fillRect(food.x, food.y, SNAKE_LENGTH, SNAKE_LENGTH);
   };
 
   moveSnake = () => {
     const { dir, snakeBody } = this.state;
     const snakeHead = snakeBody[snakeBody.length - 1];
-    const newPos = {
-      x: snakeHead.x + dir.x * SNAKE_WIDTH,
-      y: snakeHead.y + dir.y * SNAKE_HEIGHT
+    const newHead = {
+      x: snakeHead.x + dir.x * SNAKE_LENGTH,
+      y: snakeHead.y + dir.y * SNAKE_LENGTH
     };
 
-    if (newPos.x >= CANVAS_WIDTH) {
-      newPos.x = 0;
+    if (newHead.x >= CANVAS_WIDTH) {
+      newHead.x = 0;
     }
-    if (newPos.x < 0) {
-      newPos.x = CANVAS_WIDTH - SNAKE_WIDTH;
+    if (newHead.x < 0) {
+      newHead.x = CANVAS_WIDTH - SNAKE_LENGTH;
     }
-    if (newPos.y >= CANVAS_HEIGHT) {
-      newPos.y = 0;
+    if (newHead.y >= CANVAS_HEIGHT) {
+      newHead.y = 0;
     }
-    if (newPos.y < 0) {
-      newPos.y = CANVAS_HEIGHT - SNAKE_HEIGHT;
+    if (newHead.y < 0) {
+      newHead.y = CANVAS_HEIGHT - SNAKE_LENGTH;
     }
 
-    snakeBody.push(newPos);
+    snakeBody.push(newHead);
     snakeBody.shift();
+    this.eatFood();
   };
 
   changeDirection = (x, y) => {
@@ -159,9 +168,9 @@ export default class Game extends Component {
       case "ArrowRight":
         (snakeBody.length === 1 || dir.x !== -1) && this.changeDirection(1, 0);
         break;
-      // case " ":
-      //   this.growSnake(); // for testing only
-      //   break;
+      case " ":
+        this.growSnake(); // for testing only
+        break;
       default:
     }
   };
