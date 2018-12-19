@@ -7,7 +7,7 @@ const SNAKE_SPEED = 5; // cannot be more than the FRAME_RATE
 
 export default class Game extends Component {
   state = {
-    gameState: 0,
+    gameState: 0, // zero: game is stopped/not started, one: game running
     highScore: 0
   };
 
@@ -206,9 +206,9 @@ export default class Game extends Component {
       case "ArrowRight":
         (snakeBody.length === 1 || dir.x !== -1) && this.changeDirection(1, 0);
         break;
-      case " ":
-        this.growSnake(); // for testing only
-        break;
+      // case " ":
+      //   this.growSnake(); // for testing only
+      //   break;
       default:
     }
   };
