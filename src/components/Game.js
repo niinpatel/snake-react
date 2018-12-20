@@ -2,7 +2,7 @@ import React, { Component } from "react";
 const CANVAS_WIDTH = 600;
 const CANVAS_HEIGHT = 450;
 const SNAKE_LENGTH = 15; // should be divisible by both canvas height and width
-const FRAME_RATE = 60;
+const FRAME_RATE = 15;
 const SNAKE_SPEED = 5; // cannot be more than the FRAME_RATE
 const START_BUTTON = { width: 150, height: 50 };
 START_BUTTON.x = CANVAS_WIDTH / 2 - START_BUTTON.width / 2;
@@ -23,11 +23,30 @@ export default class Game extends Component {
     this.drawStartButton(ctx);
   }
 
+  componentDidUpdate() {
+    const { score, bonusFoods } = this.state;
+    if (score && score % 10 === 0) {
+      if (!bonusFoods.length) {
+        this.setState({
+          bonusFoods: [this.createNewBonusFood(score)]
+        });
+      } else {
+        const previousBonus = bonusFoods[bonusFoods.length - 1];
+        if (previousBonus.id !== score) {
+          this.setState({
+            bonusFoods: [previousBonus, this.createNewBonusFood(score)]
+          });
+        }
+      }
+    }
+  }
+
   startGame = () => {
     const { canvas, createNewFood, drawGame } = this;
     this.setState(
       {
         food: createNewFood(),
+        bonusFoods: [],
         score: 0,
         gameState: 1,
         snakeBody: [
@@ -58,6 +77,7 @@ export default class Game extends Component {
       }
 
       this.drawFood(ctx);
+      this.drawBonusFood(ctx);
       this.drawSnake(ctx);
       this.checkGameOver(ctx, game);
 
@@ -82,10 +102,35 @@ export default class Game extends Component {
     };
   };
 
+  createNewBonusFood = id => {
+    const newBonusFood = this.createNewFood();
+    newBonusFood.expires = Date.now() + 7000;
+    newBonusFood.eaten = false;
+    newBonusFood.id = id;
+    return newBonusFood;
+  };
+
   drawFood = ctx => {
     const { food } = this.state;
     ctx.fillStyle = "red";
     ctx.fillRect(food.x, food.y, SNAKE_LENGTH, SNAKE_LENGTH);
+  };
+
+  drawBonusFood = ctx => {
+    const { bonusFoods } = this.state;
+    const bonusFood = bonusFoods[bonusFoods.length - 1];
+    ctx.fillStyle = "blue";
+    if (bonusFood && bonusFood.expires > Date.now() && !bonusFood.eaten) {
+      ctx.beginPath();
+      ctx.arc(
+        bonusFood.x + SNAKE_LENGTH / 2,
+        bonusFood.y + SNAKE_LENGTH / 2,
+        SNAKE_LENGTH * Math.random() * 0.5,
+        0,
+        2 * Math.PI
+      );
+      ctx.fill();
+    }
   };
 
   moveSnake = () => {
@@ -124,8 +169,9 @@ export default class Game extends Component {
   };
 
   eatFood = () => {
-    const { food, snakeBody } = this.state;
+    const { food, snakeBody, bonusFoods } = this.state;
     const snakeHead = snakeBody[snakeBody.length - 1];
+    const bonusFood = bonusFoods[bonusFoods.length - 1];
     if (food.x === snakeHead.x && food.y === snakeHead.y) {
       this.setState(
         prevState => ({
@@ -135,6 +181,22 @@ export default class Game extends Component {
         }),
         this.growSnake
       );
+    }
+
+    if (
+      bonusFood &&
+      bonusFood.x === snakeHead.x &&
+      bonusFood.y === snakeHead.y &&
+      !bonusFood.eaten &&
+      bonusFood.expires > Date.now()
+    ) {
+      bonusFood.eaten = true;
+      this.setState(prevState => ({
+        ...prevState,
+        score:
+          prevState.score +
+          Math.floor(((bonusFood.expires - Date.now()) / 1000) * 4)
+      }));
     }
   };
 
