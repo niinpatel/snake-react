@@ -4,6 +4,9 @@ const CANVAS_HEIGHT = 450;
 const SNAKE_LENGTH = 15; // should be divisible by both canvas height and width
 const FRAME_RATE = 60;
 const SNAKE_SPEED = 5; // cannot be more than the FRAME_RATE
+const START_BUTTON = { width: 150, height: 50 };
+START_BUTTON.x = CANVAS_WIDTH / 2 - START_BUTTON.width / 2;
+START_BUTTON.y = CANVAS_HEIGHT / 2 - START_BUTTON.height / 2;
 
 export default class Game extends Component {
   state = {
@@ -12,17 +15,12 @@ export default class Game extends Component {
   };
 
   componentDidMount() {
-    const { canvas } = this;
-    const ctx = canvas.getContext("2d");
+    const ctx = this.canvas.getContext("2d");
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "24px Arial";
-
-    ctx.fillStyle = "RGB(220,220,200)";
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    ctx.strokeStyle = "blue";
-    ctx.strokeRect(200, 200, 150, 50);
-    ctx.strokeText("Click to Start", 275, 225);
+    this.clearCanvas(ctx);
+    this.drawStartButton(ctx);
   }
 
   startGame = () => {
@@ -37,7 +35,7 @@ export default class Game extends Component {
           { x: 1 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH },
           { x: 2 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH }
         ],
-        dir: { x: 1, y: 0 }
+        snakeDirection: { x: 1, y: 0 }
       },
       () => {
         const ctx = canvas.getContext("2d");
@@ -50,44 +48,18 @@ export default class Game extends Component {
     let currentFrame = 0;
 
     const game = setInterval(() => {
-      ctx.fillStyle = "RGB(220,220,200)";
-      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      this.clearCanvas(ctx);
 
-      ctx.strokeStyle = "black";
-      ctx.strokeText(`Score: ${this.state.score}`, 450, 30);
+      ctx.fillStyle = "black";
+      ctx.fillText(`Score: ${this.state.score}`, CANVAS_WIDTH * 0.85, 30);
 
       if (Math.floor(currentFrame % (FRAME_RATE / SNAKE_SPEED)) === 0) {
         this.moveSnake();
       }
 
-      ctx.fillStyle = "red";
       this.drawFood(ctx);
-
-      ctx.strokeStyle = "green";
       this.drawSnake(ctx);
-
-      if (this.checkGameOver()) {
-        const { score, highScore } = this.state;
-        ctx.fillStyle = "RGB(220,220,200)";
-        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        const newHighScore = score > highScore ? score : highScore;
-        ctx.strokeStyle = "black";
-        ctx.strokeText(
-          `Your Score ${score}, High Score ${newHighScore}`,
-          275,
-          150
-        );
-
-        ctx.strokeStyle = "blue";
-        ctx.strokeRect(200, 200, 150, 50);
-        ctx.strokeText("Click to Start ", 275, 225);
-        this.setState({ gameState: 0, highScore: newHighScore }, () =>
-          clearInterval(game)
-        );
-      }
+      this.checkGameOver(ctx, game);
 
       currentFrame++;
     }, 1000 / FRAME_RATE);
@@ -95,6 +67,7 @@ export default class Game extends Component {
 
   drawSnake = ctx => {
     const { snakeBody } = this.state;
+    ctx.strokeStyle = "green";
     for (let part of snakeBody) {
       ctx.strokeRect(part.x, part.y, SNAKE_LENGTH, SNAKE_LENGTH);
     }
@@ -111,15 +84,16 @@ export default class Game extends Component {
 
   drawFood = ctx => {
     const { food } = this.state;
+    ctx.fillStyle = "red";
     ctx.fillRect(food.x, food.y, SNAKE_LENGTH, SNAKE_LENGTH);
   };
 
   moveSnake = () => {
-    const { dir, snakeBody } = this.state;
+    const { snakeDirection, snakeBody } = this.state;
     const snakeHead = snakeBody[snakeBody.length - 1];
     const newHead = {
-      x: snakeHead.x + dir.x * SNAKE_LENGTH,
-      y: snakeHead.y + dir.y * SNAKE_LENGTH
+      x: snakeHead.x + snakeDirection.x * SNAKE_LENGTH,
+      y: snakeHead.y + snakeDirection.y * SNAKE_LENGTH
     };
 
     if (newHead.x >= CANVAS_WIDTH) {
@@ -140,10 +114,10 @@ export default class Game extends Component {
     this.eatFood();
   };
 
-  changeDirection = (x, y) => {
+  changeSnakeDirection = (x, y) => {
     this.setState(
       {
-        dir: { x, y }
+        snakeDirection: { x, y }
       },
       this.moveSnake
     );
@@ -165,46 +139,70 @@ export default class Game extends Component {
   };
 
   growSnake = () => {
-    const { snakeBody, dir } = this.state;
+    const { snakeBody, snakeDirection } = this.state;
     const snakeTail = snakeBody[0];
     const newSnakeTail = {
-      x: snakeTail.x - dir.x,
-      y: snakeTail.y - dir.y
+      x: snakeTail.x - snakeDirection.x,
+      y: snakeTail.y - snakeDirection.y
     };
     snakeBody.unshift(newSnakeTail);
   };
 
-  checkGameOver = () => {
+  checkSnakeTailCollision = () => {
     const { snakeBody } = this.state;
     const snakeHead = snakeBody[snakeBody.length - 1];
-
     for (let part of snakeBody) {
       if (
+        part !== snakeHead &&
         part.x === snakeHead.x &&
-        part.y === snakeHead.y &&
-        part !== snakeHead
+        part.y === snakeHead.y
       ) {
         return true;
       }
     }
+  };
 
-    return false;
+  checkGameOver = (ctx, game) => {
+    const gameOver = this.checkSnakeTailCollision();
+    if (gameOver) {
+      const { score, highScore } = this.state;
+      this.clearCanvas(ctx);
+
+      const newHighScore = score > highScore ? score : highScore;
+      ctx.fillStyle = "black";
+      ctx.fillText(
+        `Your Score ${score}, High Score ${newHighScore}`,
+        CANVAS_WIDTH / 2,
+        START_BUTTON.y - 25
+      );
+
+      this.drawStartButton(ctx);
+      this.setState({ gameState: 0, highScore: newHighScore }, () =>
+        clearInterval(game)
+      );
+    }
+  };
+
+  clearCanvas = ctx => {
+    ctx.fillStyle = "RGB(220,220,200)";
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   };
 
   handleKeyPress = e => {
-    const { snakeBody, dir } = this.state;
+    const { snakeDirection } = this.state;
     switch (e.key) {
       case "ArrowUp":
-        (snakeBody.length === 1 || dir.y !== 1) && this.changeDirection(0, -1);
+        snakeDirection.y !== 1 && this.changeSnakeDirection(0, -1);
         break;
       case "ArrowDown":
-        (snakeBody.length === 1 || dir.y !== -1) && this.changeDirection(0, 1);
+        snakeDirection.y !== -1 && this.changeSnakeDirection(0, 1);
         break;
       case "ArrowLeft":
-        (snakeBody.length === 1 || dir.x !== 1) && this.changeDirection(-1, 0);
+        snakeDirection.x !== 1 && this.changeSnakeDirection(-1, 0);
         break;
       case "ArrowRight":
-        (snakeBody.length === 1 || dir.x !== -1) && this.changeDirection(1, 0);
+        snakeDirection.x !== -1 && this.changeSnakeDirection(1, 0);
         break;
       // case " ":
       //   this.growSnake(); // for testing only
@@ -213,16 +211,27 @@ export default class Game extends Component {
     }
   };
 
+  drawStartButton = ctx => {
+    ctx.fillStyle = "blue";
+    ctx.strokeStyle = "blue";
+    ctx.strokeRect(
+      START_BUTTON.x,
+      START_BUTTON.y,
+      START_BUTTON.width,
+      START_BUTTON.height
+    );
+    ctx.fillText("Click to Start", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+  };
+
   handleClick = e => {
-    e.persist();
     const { layerX, layerY } = e.nativeEvent;
     const { gameState } = this.state;
     if (
       gameState === 0 &&
-      layerX > 200 &&
-      layerX < 350 &&
-      layerY > 200 &&
-      layerY < 250
+      layerX > START_BUTTON.x &&
+      layerX < START_BUTTON.x + START_BUTTON.width &&
+      layerY > START_BUTTON.y &&
+      layerY < START_BUTTON.y + START_BUTTON.height
     ) {
       this.startGame();
     }
