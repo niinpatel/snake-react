@@ -322,14 +322,19 @@ export default class Game extends Component {
 
   render() {
     return (
-      <canvas
-        height={CANVAS_HEIGHT}
-        width={CANVAS_WIDTH}
-        ref={canvas => (this.canvas = canvas)}
-        tabIndex="0"
-        onKeyDown={this.handleKeyPress}
-        onClick={this.handleClick}
-      />
+      <div className="col-md-12 col-xl-7 col-lg-8 pt-3">
+        <canvas
+          height={CANVAS_HEIGHT}
+          width={CANVAS_WIDTH}
+          ref={canvas => (this.canvas = canvas)}
+          tabIndex="0"
+          onKeyDown={this.handleKeyPress}
+          onClick={this.handleClick}
+        />
+        <p className="lead mt-2 font-weight-bold">
+          Your high score: {this.state.highScore}
+        </p>
+      </div>
     );
   }
 }

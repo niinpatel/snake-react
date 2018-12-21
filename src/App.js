@@ -1,13 +1,23 @@
 import React, { Component } from "react";
 import "./App.css";
 import Game from "./components/Game";
+import Leaderboard from "./components/Leaderboard";
+import Footer from "./components/Footer";
 
 class App extends Component {
   render() {
     return (
-      <div className="app">
-        <h1>Snake Game</h1>
-        <Game />
+      <div>
+        <div className="container">
+          <div className="text-center mt-3">
+            <h1>Snake game</h1>
+          </div>
+          <div className="row">
+            <Game />
+            <Leaderboard />
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
