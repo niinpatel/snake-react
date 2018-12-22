@@ -4,7 +4,7 @@ import React, { Component } from "react";
 const CANVAS_WIDTH = 600;
 const CANVAS_HEIGHT = 450;
 const SNAKE_LENGTH = 15; // should be divisible by both canvas height and width
-const FRAME_RATE = 15;
+const FRAME_RATE = 30;
 const START_BUTTON = { width: 150, height: 50 };
 START_BUTTON.x = CANVAS_WIDTH / 2 - START_BUTTON.width / 2;
 START_BUTTON.y = CANVAS_HEIGHT / 2 - START_BUTTON.height / 2;
@@ -12,8 +12,7 @@ START_BUTTON.y = CANVAS_HEIGHT / 2 - START_BUTTON.height / 2;
 export default class Game extends Component {
   state = {
     gameIsRunning: false,
-    highScore: 0,
-    snakeSpeed: 5 // cannot be more than the frame rate
+    highScore: 0
   };
 
   // constants for initial snake body and directions
@@ -23,17 +22,19 @@ export default class Game extends Component {
     { x: 2 * SNAKE_LENGTH, y: 0 * SNAKE_LENGTH }
   ];
   initialDirections = { x: 1, y: 0 };
+  initialSnakeSpeed = 5;
 
   componentDidMount() {
-    const ctx = this.canvas.getContext("2d");
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "24px Arial";
-    this.clearCanvas(ctx);
-    this.drawStartButton(ctx);
+    this.ctx = this.canvas.getContext("2d");
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+    this.ctx.font = "24px Arial";
+    this.clearCanvas(this.ctx);
+    this.drawStartButton(this.ctx);
   }
 
   componentDidUpdate() {
+    // create a 'bonus' food when score is a multiple of ten
     const { score, bonusFoods, gameIsRunning } = this.state;
     if (gameIsRunning && score && score % 10 === 0) {
       if (!bonusFoods.length) {
@@ -62,7 +63,7 @@ export default class Game extends Component {
         snakeBody: [...this.initialSnakeBody],
         snakeDirection: this.initialDirections,
         snakeLives: 3,
-        snakeSpeed: 5
+        snakeSpeed: this.initialSnakeSpeed
       },
       () => {
         const ctx = canvas.getContext("2d");
@@ -71,9 +72,26 @@ export default class Game extends Component {
     );
   };
 
+  stopGame = ctx => {
+    const { score, highScore, gameInterval } = this.state;
+    this.clearCanvas(ctx);
+
+    const newHighScore = score > highScore ? score : highScore;
+    ctx.fillStyle = "black";
+    ctx.fillText(
+      `Your Score ${score}, High Score ${newHighScore}`,
+      CANVAS_WIDTH / 2,
+      START_BUTTON.y - 25
+    );
+
+    this.drawStartButton(ctx);
+    this.setState({ gameIsRunning: false, highScore: newHighScore }, () =>
+      clearInterval(gameInterval)
+    );
+  };
+
   drawGame = ctx => {
     let currentFrame = 0;
-
     const game = setInterval(() => {
       this.clearCanvas(ctx);
       this.displayScoreAndLives(ctx);
@@ -85,6 +103,9 @@ export default class Game extends Component {
       this.checkGameOver(ctx, game);
       currentFrame++;
     }, 1000 / FRAME_RATE);
+    this.setState({
+      gameInterval: game
+    });
   };
 
   displayScoreAndLives = ctx => {
@@ -192,7 +213,10 @@ export default class Game extends Component {
           food: this.createNewFood(),
           score: ++prevState.score
         }),
-        this.growSnake
+        () => {
+          this.growSnake();
+          this.adjustDifficulty();
+        }
       );
     }
 
@@ -223,6 +247,16 @@ export default class Game extends Component {
     snakeBody.unshift(newSnakeTail);
   };
 
+  adjustDifficulty = () => {
+    const snakeLen = this.state.snakeBody.length;
+    if (snakeLen % 10 === 0 && snakeLen < 100) {
+      this.setState(prevState => ({
+        ...prevState,
+        snakeSpeed: prevState.snakeSpeed * 1.25
+      }));
+    }
+  };
+
   checkSnakeTailCollision = () => {
     const { snakeBody } = this.state;
     const snakeHead = snakeBody[snakeBody.length - 1];
@@ -237,33 +271,20 @@ export default class Game extends Component {
     }
   };
 
-  checkGameOver = (ctx, game) => {
+  checkGameOver = ctx => {
     const { snakeLives } = this.state;
     const dead = this.checkSnakeTailCollision();
 
     if (dead) {
       if (snakeLives <= 1) {
-        const { score, highScore } = this.state;
-        this.clearCanvas(ctx);
-
-        const newHighScore = score > highScore ? score : highScore;
-        ctx.fillStyle = "black";
-        ctx.fillText(
-          `Your Score ${score}, High Score ${newHighScore}`,
-          CANVAS_WIDTH / 2,
-          START_BUTTON.y - 25
-        );
-
-        this.drawStartButton(ctx);
-        this.setState({ gameIsRunning: false, highScore: newHighScore }, () =>
-          clearInterval(game)
-        );
+        this.stopGame(ctx);
       } else {
         this.setState(prevState => ({
           ...prevState,
           snakeLives: --prevState.snakeLives,
           snakeBody: [...this.initialSnakeBody],
-          snakeDirection: this.initialDirections
+          snakeDirection: this.initialDirections,
+          snakeSpeed: this.initialSnakeSpeed
         }));
       }
     }
@@ -276,6 +297,8 @@ export default class Game extends Component {
   };
 
   handleKeyPress = e => {
+    console.log(e.key);
+    e.preventDefault();
     const { snakeDirection } = this.state;
     switch (e.key) {
       case "ArrowUp":
@@ -289,6 +312,26 @@ export default class Game extends Component {
         break;
       case "ArrowRight":
         snakeDirection.x !== -1 && this.changeSnakeDirection(1, 0);
+        break;
+      case "Escape":
+        this.stopGame(this.ctx);
+        break;
+      case " ":
+        if (this.state.paused) {
+          this.setState(
+            {
+              paused: false
+            },
+            () => this.drawGame(this.ctx)
+          );
+        } else {
+          this.setState(
+            {
+              paused: true
+            },
+            () => clearInterval(this.state.gameInterval)
+          );
+        }
         break;
       default:
     }
