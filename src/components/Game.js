@@ -90,6 +90,28 @@ export default class Game extends Component {
     );
   };
 
+  pauseOrUnpause = () => {
+    const { paused, gameInterval, gameIsRunning } = this.state;
+    if (!gameIsRunning) {
+      return;
+    }
+    if (paused) {
+      this.setState(
+        {
+          paused: false
+        },
+        () => this.drawGame(this.ctx)
+      );
+    } else {
+      this.setState(
+        {
+          paused: true
+        },
+        () => clearInterval(gameInterval)
+      );
+    }
+  };
+
   drawGame = ctx => {
     let currentFrame = 0;
     const game = setInterval(() => {
@@ -297,41 +319,26 @@ export default class Game extends Component {
   };
 
   handleKeyPress = e => {
-    console.log(e.key);
     e.preventDefault();
-    const { snakeDirection } = this.state;
+    const { snakeDirection, paused } = this.state;
     switch (e.key) {
       case "ArrowUp":
-        snakeDirection.y !== 1 && this.changeSnakeDirection(0, -1);
+        !paused && snakeDirection.y !== 1 && this.changeSnakeDirection(0, -1);
         break;
       case "ArrowDown":
-        snakeDirection.y !== -1 && this.changeSnakeDirection(0, 1);
+        !paused && snakeDirection.y !== -1 && this.changeSnakeDirection(0, 1);
         break;
       case "ArrowLeft":
-        snakeDirection.x !== 1 && this.changeSnakeDirection(-1, 0);
+        !paused && snakeDirection.x !== 1 && this.changeSnakeDirection(-1, 0);
         break;
       case "ArrowRight":
-        snakeDirection.x !== -1 && this.changeSnakeDirection(1, 0);
+        !paused && snakeDirection.x !== -1 && this.changeSnakeDirection(1, 0);
         break;
       case "Escape":
         this.stopGame(this.ctx);
         break;
       case " ":
-        if (this.state.paused) {
-          this.setState(
-            {
-              paused: false
-            },
-            () => this.drawGame(this.ctx)
-          );
-        } else {
-          this.setState(
-            {
-              paused: true
-            },
-            () => clearInterval(this.state.gameInterval)
-          );
-        }
+        this.pauseOrUnpause();
         break;
       default:
     }
@@ -347,6 +354,18 @@ export default class Game extends Component {
       START_BUTTON.height
     );
     ctx.fillText("Click to Start", CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+    ctx.fillStyle = "black";
+    ctx.fillText(
+      "Arrow Keys: Move Snake",
+      CANVAS_WIDTH / 2,
+      (2 * CANVAS_HEIGHT) / 3
+    );
+    ctx.fillText(
+      "Space Key: Pause/Unpause",
+      CANVAS_WIDTH / 2,
+      (2.2 * CANVAS_HEIGHT) / 3
+    );
+    ctx.fillText("Esc Key: Stop", CANVAS_WIDTH / 2, (2.4 * CANVAS_HEIGHT) / 3);
   };
 
   handleClick = e => {
