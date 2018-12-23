@@ -40,37 +40,49 @@ export default class Game extends Component {
   }
 
   getLoggedInUser = () => {
-    firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        this.setState(
-          { user, loadingHighScore: true, loadingUser: false },
-          () => {
-            firebase
-              .database()
-              .ref(`scores/${user.uid}`)
-              .once(
-                "value",
-                snap => {
-                  this.setState({
-                    highScore: snap.val().score,
-                    loadingHighScore: false
-                  });
-                },
-                error => {
-                  this.setState(
-                    {
-                      loadingHighScore: false
-                    },
-                    () => alert(error.toString())
-                  );
-                }
-              );
-          }
-        );
-      } else {
-        this.setState({ loadingUser: false, loadingHighScore: false });
-      }
-    });
+    firebase.auth().onAuthStateChanged(
+      user => {
+        if (user) {
+          this.setState(
+            { user, loadingHighScore: true, loadingUser: false },
+            () => {
+              firebase
+                .database()
+                .ref(`scores/${user.uid}`)
+                .once(
+                  "value",
+                  snap => {
+                    if (snap.hasChild("score")) {
+                      this.setState({
+                        highScore: Math.max(
+                          snap.val().score,
+                          this.state.highScore
+                        ),
+                        loadingHighScore: false
+                      });
+                    } else {
+                      this.setState({
+                        loadingHighScore: false
+                      });
+                    }
+                  },
+                  error => {
+                    this.setState(
+                      {
+                        loadingHighScore: false
+                      },
+                      () => alert(error.toString())
+                    );
+                  }
+                );
+            }
+          );
+        } else {
+          this.setState({ loadingUser: false, loadingHighScore: false });
+        }
+      },
+      error => alert(error.toString())
+    );
   };
 
   componentDidUpdate() {
@@ -427,26 +439,24 @@ export default class Game extends Component {
       .auth()
       .signInWithPopup(google_provider)
       .then(result => {
-        const ref = firebase.database().ref(`scores/${result.user.uid}/score`);
+        const ref = firebase.database().ref(`scores/${result.user.uid}`);
         ref.once("value", snap => {
-          const val = snap.val();
-          if (val < this.state.highScore) {
+          if (snap.hasChild("score")) {
             ref
-              .update(this.state.highScore)
+              .update({
+                score: Math.max(snap.val().score, this.state.highScore)
+              })
               .then(() => console.log("new high score saved"))
-              .catch(() =>
-                console.log(
-                  "local high score not saved (probably because your previous high score is greater)"
-                )
-              );
+              .catch(console.error);
           } else {
-            this.setState({
-              highScore: snap.val()
+            ref.set({
+              name: result.user.displayName || "Anonymous",
+              score: this.state.highScore
             });
           }
         });
       })
-      .catch(console.error);
+      .catch(e => alert(e.toString()));
   };
 
   logout = () => {

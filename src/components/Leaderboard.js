@@ -1,6 +1,18 @@
 import React, { Component } from "react";
 
 export default class Leaderboard extends Component {
+  componentDidMount() {
+    // const ref = firebase.database().ref("scores");
+    // ref.orderByChild("score").on(
+    //   "value",
+    //   snap => {
+    //     snap.forEach(c => console.log(c.val()));
+    //   },
+    //   e => {
+    //     console.log("e", e);
+    //   }
+    // );
+  }
   render() {
     return (
       <div className="col-xl-5 col-lg-4 leaderboard">
