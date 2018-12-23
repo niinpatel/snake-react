@@ -10,7 +10,7 @@ class App extends Component {
       <div>
         <div className="container">
           <div className="text-center mt-3">
-            <h1>Snake game</h1>
+            <h1>Snake Master</h1>
           </div>
           <div className="row">
             <Game />

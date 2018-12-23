@@ -1,18 +1,32 @@
 import React, { Component } from "react";
+import firebase from "../config/firebase";
+import LeaderboardItem from "./LeaderboardItem";
 
 export default class Leaderboard extends Component {
+  state = {
+    leaderboard: []
+  };
+
   componentDidMount() {
-    // const ref = firebase.database().ref("scores");
-    // ref.orderByChild("score").on(
-    //   "value",
-    //   snap => {
-    //     snap.forEach(c => console.log(c.val()));
-    //   },
-    //   e => {
-    //     console.log("e", e);
-    //   }
-    // );
+    const ref = firebase.database().ref("scores");
+    ref
+      .orderByChild("score")
+      .limitToLast(10)
+      .on(
+        "value",
+        snap => {
+          const leaderboard = [];
+          snap.forEach(c => {
+            leaderboard.unshift(c.val());
+          });
+          this.setState({ leaderboard });
+        },
+        e => {
+          console.log("e", e);
+        }
+      );
   }
+
   render() {
     return (
       <div className="col-xl-5 col-lg-4 leaderboard">
@@ -26,70 +40,16 @@ export default class Leaderboard extends Component {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>1</td>
-              <td>Smith</td>
-              <td>50</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>Jackson</td>
-              <td>94</td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td>Doe</td>
-              <td>80</td>
-            </tr>
-
-            <tr>
-              <td>4</td>
-              <td>Smith</td>
-              <td>50</td>
-            </tr>
-            <tr>
-              <td>5</td>
-              <td>Jackson</td>
-              <td>94</td>
-            </tr>
-            <tr>
-              <td>6</td>
-              <td>Doe</td>
-              <td>80</td>
-            </tr>
-
-            <tr>
-              <td>7</td>
-              <td>Smith</td>
-              <td>50</td>
-            </tr>
-            <tr>
-              <td>8</td>
-              <td>Jackson</td>
-              <td>94</td>
-            </tr>
-            <tr>
-              <td>9</td>
-              <td>Doe</td>
-              <td>80</td>
-            </tr>
-
-            <tr>
-              <td>10</td>
-              <td>Smith</td>
-              <td>50</td>
-            </tr>
-
-            <tr>
-              <td>11</td>
-              <td>Smith</td>
-              <td>50</td>
-            </tr>
-            <tr>
-              <td>12</td>
-              <td>Smith</td>
-              <td>50</td>
-            </tr>
+            {this.state.leaderboard.map((user, index) => {
+              return (
+                <LeaderboardItem
+                  rank={index + 1}
+                  name={user.name}
+                  score={user.score}
+                  key={user.name + index + user.score}
+                />
+              );
+            })}
           </tbody>
         </table>
       </div>

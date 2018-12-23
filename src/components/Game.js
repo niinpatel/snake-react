@@ -444,7 +444,8 @@ export default class Game extends Component {
           if (snap.hasChild("score")) {
             ref
               .update({
-                score: Math.max(snap.val().score, this.state.highScore)
+                score: Math.max(snap.val().score, this.state.highScore),
+                name: result.user.displayName || "Anonymous"
               })
               .then(() => console.log("new high score saved"))
               .catch(console.error);
