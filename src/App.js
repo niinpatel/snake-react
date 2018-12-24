@@ -6,6 +6,7 @@ import Footer from "./components/Footer";
 import HighScore from "./components/HighScore";
 import LoginLogout from "./components/LoginLogout";
 import firebase from "./config/firebase";
+import Header from "./components/Header";
 
 class App extends Component {
   state = {
@@ -97,10 +98,8 @@ class App extends Component {
   render() {
     return (
       <div>
+        <Header />
         <div className="container">
-          <div className="text-center mt-3">
-            <h1>Snake Master</h1>
-          </div>
           <div className="row">
             <div className="col-md-12 col-xl-7 col-lg-8 pt-3">
               <Game

@@ -32,7 +32,7 @@ export default class Game extends Component {
     this.drawStartButton(this.ctx);
   }
 
-  componentDidUpdate() {
+  shouldComponentUpdate() {
     // create a 'bonus' food when score is a multiple of ten
     const { score, bonusFoods, gameIsRunning } = this.state;
     if (gameIsRunning && score && score % 10 === 0) {
@@ -49,6 +49,7 @@ export default class Game extends Component {
         }
       }
     }
+    return false;
   }
 
   startGame = () => {
