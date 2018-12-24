@@ -4,7 +4,8 @@ import LeaderboardItem from "./LeaderboardItem";
 
 export default class Leaderboard extends Component {
   state = {
-    leaderboard: []
+    leaderboard: [],
+    error: null
   };
 
   componentDidMount() {
@@ -16,21 +17,29 @@ export default class Leaderboard extends Component {
         "value",
         snap => {
           const leaderboard = [];
-          snap.forEach(c => {
-            leaderboard.unshift(c.val());
+          snap.forEach(player => {
+            leaderboard.unshift({ ...player.val(), key: player.key });
           });
           this.setState({ leaderboard });
         },
-        e => {
-          console.log("e", e);
+        error => {
+          this.setState({
+            error: error.toString()
+          });
         }
       );
   }
 
   render() {
+    if (this.state.error) {
+      return (
+        <div className="text-danger">
+          We were unable to fetch the scoreboard. {this.state.error}
+        </div>
+      );
+    }
     return (
-      <div className="col-xl-5 col-lg-4 leaderboard">
-        <h2>Leaderboard </h2>
+      <div>
         <table className="table table-bordered table-sm">
           <thead>
             <tr>
@@ -40,13 +49,15 @@ export default class Leaderboard extends Component {
             </tr>
           </thead>
           <tbody>
-            {this.state.leaderboard.map((user, index) => {
+            {this.state.leaderboard.map((player, index) => {
               return (
                 <LeaderboardItem
+                  player={player}
                   rank={index + 1}
-                  name={user.name}
-                  score={user.score}
-                  key={user.name + index + user.score}
+                  isLoggedInUser={
+                    this.props.user && this.props.user.uid === player.key
+                  }
+                  key={player.name + index + player.score}
                 />
               );
             })}

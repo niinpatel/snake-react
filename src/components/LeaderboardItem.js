@@ -2,11 +2,17 @@ import React, { Component } from "react";
 
 export default class LeaderboardItem extends Component {
   render() {
+    const {
+      player: { name, score },
+      rank,
+      isLoggedInUser
+    } = this.props;
+
     return (
-      <tr>
-        <td>{this.props.rank}</td>
-        <td>{this.props.name}</td>
-        <td>{this.props.score}</td>
+      <tr className={isLoggedInUser ? "table-success" : ""}>
+        <td>{rank}</td>
+        <td>{isLoggedInUser ? name + " (You)" : name}</td>
+        <td>{score}</td>
       </tr>
     );
   }

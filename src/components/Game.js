@@ -1,6 +1,4 @@
 import React, { Component } from "react";
-import HighScore from "./HighScore";
-import firebase, { google_provider } from "../config/firebase";
 
 // game constants
 const CANVAS_WIDTH = 600;
@@ -13,11 +11,7 @@ START_BUTTON.y = CANVAS_HEIGHT / 2 - START_BUTTON.height / 2;
 
 export default class Game extends Component {
   state = {
-    gameIsRunning: false,
-    highScore: 0,
-    loadingHighScore: false,
-    loadingUser: true,
-    user: null
+    gameIsRunning: false
   };
 
   // constants for initial snake body and directions
@@ -36,54 +30,7 @@ export default class Game extends Component {
     this.ctx.font = "24px Arial";
     this.clearCanvas(this.ctx);
     this.drawStartButton(this.ctx);
-    this.getLoggedInUser();
   }
-
-  getLoggedInUser = () => {
-    firebase.auth().onAuthStateChanged(
-      user => {
-        if (user) {
-          this.setState(
-            { user, loadingHighScore: true, loadingUser: false },
-            () => {
-              firebase
-                .database()
-                .ref(`scores/${user.uid}`)
-                .once(
-                  "value",
-                  snap => {
-                    if (snap.hasChild("score")) {
-                      this.setState({
-                        highScore: Math.max(
-                          snap.val().score,
-                          this.state.highScore
-                        ),
-                        loadingHighScore: false
-                      });
-                    } else {
-                      this.setState({
-                        loadingHighScore: false
-                      });
-                    }
-                  },
-                  error => {
-                    this.setState(
-                      {
-                        loadingHighScore: false
-                      },
-                      () => alert(error.toString())
-                    );
-                  }
-                );
-            }
-          );
-        } else {
-          this.setState({ loadingUser: false, loadingHighScore: false });
-        }
-      },
-      error => alert(error.toString())
-    );
-  };
 
   componentDidUpdate() {
     // create a 'bonus' food when score is a multiple of ten
@@ -125,7 +72,8 @@ export default class Game extends Component {
   };
 
   stopGame = ctx => {
-    const { score, highScore, gameInterval } = this.state;
+    const { score, gameInterval } = this.state;
+    const { highScore, updateHighScore } = this.props;
     this.clearCanvas(ctx);
 
     const newHighScore = score > highScore ? score : highScore;
@@ -136,10 +84,9 @@ export default class Game extends Component {
       START_BUTTON.y - 25
     );
 
+    updateHighScore(newHighScore);
     this.drawStartButton(ctx);
-    this.setState({ gameIsRunning: false, highScore: newHighScore }, () =>
-      clearInterval(gameInterval)
-    );
+    this.setState({ gameIsRunning: false }, () => clearInterval(gameInterval));
   };
 
   pauseOrUnpause = () => {
@@ -434,71 +381,16 @@ export default class Game extends Component {
     }
   };
 
-  login = () => {
-    firebase
-      .auth()
-      .signInWithPopup(google_provider)
-      .then(result => {
-        const ref = firebase.database().ref(`scores/${result.user.uid}`);
-        ref.once("value", snap => {
-          if (snap.hasChild("score")) {
-            ref
-              .update({
-                score: Math.max(snap.val().score, this.state.highScore),
-                name: result.user.displayName || "Anonymous"
-              })
-              .then(() => console.log("new high score saved"))
-              .catch(console.error);
-          } else {
-            ref.set({
-              name: result.user.displayName || "Anonymous",
-              score: this.state.highScore
-            });
-          }
-        });
-      })
-      .catch(e => alert(e.toString()));
-  };
-
-  logout = () => {
-    firebase
-      .auth()
-      .signOut()
-      .then(() => {
-        this.setState(
-          {
-            user: null,
-            highScore: 0
-          },
-          () => alert("You have been logged out!")
-        );
-      })
-      .catch(error => {
-        alert(error.toString());
-      });
-  };
-
   render() {
-    const { user, highScore, loadingHighScore, loadingUser } = this.state;
     return (
-      <div className="col-md-12 col-xl-7 col-lg-8 pt-3">
-        <canvas
-          height={CANVAS_HEIGHT}
-          width={CANVAS_WIDTH}
-          ref={canvas => (this.canvas = canvas)}
-          tabIndex="0"
-          onKeyDown={this.handleKeyPress}
-          onClick={this.handleClick}
-        />
-        <HighScore
-          highScore={highScore}
-          user={user}
-          loadingHighScore={loadingHighScore}
-          loadingUser={loadingUser}
-          login={this.login}
-          logout={this.logout}
-        />
-      </div>
+      <canvas
+        height={CANVAS_HEIGHT}
+        width={CANVAS_WIDTH}
+        ref={canvas => (this.canvas = canvas)}
+        tabIndex="0"
+        onKeyDown={this.handleKeyPress}
+        onClick={this.handleClick}
+      />
     );
   }
 }
