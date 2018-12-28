@@ -3,7 +3,7 @@ import "firebase/auth";
 import "firebase/database";
 
 var config = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  apiKey: "AIzaSyDNjT4pY3EhqCdjoJh9II8cLSG1XBCefUQ",
   authDomain: "snake-master-db17d.firebaseapp.com",
   databaseURL: "https://snake-master-db17d.firebaseio.com",
   projectId: "snake-master-db17d",
